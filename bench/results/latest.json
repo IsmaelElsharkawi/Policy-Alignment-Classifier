@@ -1,0 +1,139 @@
+{
+  "run_id": "20260925T153336Z",
+  "created_at": "2026-09-25T15:33:36+00:00",
+  "guard_model": "claude-haiku-4-5",
+  "policy": "ops-agent",
+  "base_url": "http://localhost:8768",
+  "workload": "8 events cycled (all four kinds, 0-12 context events)",
+  "levels": [
+    {
+      "concurrency": 1,
+      "n": 16,
+      "ok": 16,
+      "errors": 0,
+      "error_samples": [],
+      "wall_s": 38.99,
+      "throughput_eps": 0.41,
+      "p50_ms": 2370.6,
+      "p95_ms": 2839.3,
+      "p99_ms": 2839.3,
+      "mean_ms": 2436.9,
+      "model_p50_ms": 2368.3,
+      "overhead_p50_ms": 2.4,
+      "mean_input_tokens": 2430,
+      "cost_usd": 0.0469,
+      "by_context": [
+        {
+          "context_events": 0,
+          "p50_ms": 2220.7
+        },
+        {
+          "context_events": 2,
+          "p50_ms": 2483.0
+        },
+        {
+          "context_events": 4,
+          "p50_ms": 2268.4
+        },
+        {
+          "context_events": 6,
+          "p50_ms": 1933.4
+        },
+        {
+          "context_events": 9,
+          "p50_ms": 2622.4
+        },
+        {
+          "context_events": 12,
+          "p50_ms": 2370.6
+        }
+      ]
+    },
+    {
+      "concurrency": 4,
+      "n": 16,
+      "ok": 16,
+      "errors": 0,
+      "error_samples": [],
+      "wall_s": 11.08,
+      "throughput_eps": 1.444,
+      "p50_ms": 2348.0,
+      "p95_ms": 3489.8,
+      "p99_ms": 3489.8,
+      "mean_ms": 2467.4,
+      "model_p50_ms": 2344.5,
+      "overhead_p50_ms": 3.5,
+      "mean_input_tokens": 2430,
+      "cost_usd": 0.04677,
+      "by_context": [
+        {
+          "context_events": 0,
+          "p50_ms": 2065.9
+        },
+        {
+          "context_events": 2,
+          "p50_ms": 2131.4
+        },
+        {
+          "context_events": 4,
+          "p50_ms": 2348.0
+        },
+        {
+          "context_events": 6,
+          "p50_ms": 2185.6
+        },
+        {
+          "context_events": 9,
+          "p50_ms": 2903.4
+        },
+        {
+          "context_events": 12,
+          "p50_ms": 2226.7
+        }
+      ]
+    },
+    {
+      "concurrency": 8,
+      "n": 16,
+      "ok": 16,
+      "errors": 0,
+      "error_samples": [],
+      "wall_s": 5.8,
+      "throughput_eps": 2.76,
+      "p50_ms": 2492.4,
+      "p95_ms": 3228.0,
+      "p99_ms": 3228.0,
+      "mean_ms": 2478.0,
+      "model_p50_ms": 2490.4,
+      "overhead_p50_ms": 5.7,
+      "mean_input_tokens": 2430,
+      "cost_usd": 0.04727,
+      "by_context": [
+        {
+          "context_events": 0,
+          "p50_ms": 2146.0
+        },
+        {
+          "context_events": 2,
+          "p50_ms": 1912.8
+        },
+        {
+          "context_events": 4,
+          "p50_ms": 2291.1
+        },
+        {
+          "context_events": 6,
+          "p50_ms": 2044.2
+        },
+        {
+          "context_events": 9,
+          "p50_ms": 2509.9
+        },
+        {
+          "context_events": 12,
+          "p50_ms": 2810.7
+        }
+      ]
+    }
+  ]
+}

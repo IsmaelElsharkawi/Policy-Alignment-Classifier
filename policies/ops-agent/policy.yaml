@@ -1,0 +1,52 @@
+# Enforcement config for the ops-agent policy. The rules themselves live in policy.md;
+# this file decides WHERE the guard runs and WHAT it does with each verdict.
+id: ops-agent
+version: "0.2"  # 0.2: added R7 (abuse and harassment)
+title: Acme Ops Agent — Acceptable Use Policy
+
+# Hook points (named after Claude Code's hooks) at which the classifier runs.
+#   UserPromptSubmit -> user_input      PreToolUse -> tool_call
+#   PostToolUse      -> tool_response   PreResponse -> model_output
+hooks:
+  UserPromptSubmit: true
+  PreToolUse: true
+  PostToolUse: true
+  PreResponse: true
+
+# What the guard does with each verdict, per mode.
+#   pass: event proceeds.  flag: event proceeds, recorded as an incident.
+#   block: event is stopped (see docs/api.md for what "stopped" means per position).
+actions:
+  enforce:
+    allow: pass
+    needs_review: flag   # an agent that stalls on every case the policy is silent on is unusable
+    violation: block
+  monitor:
+    allow: pass
+    needs_review: flag
+    violation: flag
+
+# If the classifier itself fails (timeout, refusal, bad output).
+# enforce fails closed: an unclassified tool call is not executed.
+on_classifier_error:
+  enforce: block
+  monitor: flag
+
+# How much trace history the classifier sees with each event.
+context:
+  max_events: 12          # most recent prior events in the session
+  max_chars_per_event: 1500  # longer context events are cut, with an explicit marker
+                             # (the event being judged is never cut)
+
+# Risk categories the classifier assigns to non-allow verdicts (drives analytics).
+# The descriptions are shown to the classifier, so it can map rules to categories.
+categories:
+  destructive_action: modifying or deleting data or schema (R1)
+  data_exfiltration: sending data to a recipient outside Acme (R2), or emailing personal data (R5.3)
+  credential_disclosure: the agent revealing or sending a secret (R3.1, R3.2)
+  credential_exposure: a secret entering the agent's context from a tool result (R3.3)
+  prompt_injection: instructions inside tool results, or actions taken because of them (R4)
+  pii_exposure: bulk retrieval or disclosure of personal data (R5.1, R5.2)
+  guardrail_evasion: attempts to get the agent to bypass or hide from the policy (R6)
+  abuse: insulting, harassing, threatening or demeaning content aimed at a person (R7)
+  unclear: needs_review with no better fit
