@@ -593,13 +593,24 @@ class RedTeam:
         return outcome(c["label"], c["results"].get(stage, {}).get("verdict")) == "correct"
 
     def compare(self, before: str, after: str) -> dict:
+        """Fixed / regressed per split. A case whose baseline votes were split is a coin flip
+        either way, so a change on it is listed as noise and doesn't count toward the decision
+        (the first run rolled back a batch over one such flip on a case the new rules didn't cite)."""
         out = {}
         for split in ("train", "holdout", "all"):
             cs = [c for c in self.labeled() if split == "all" or c["split"] == split]
             cs = [c for c in cs if c["results"].get(before, {}).get("verdict") and c["results"].get(after, {}).get("verdict")]
-            fixed = [c["id"] for c in cs if not self.right(c, before) and self.right(c, after)]
-            regressed = [c["id"] for c in cs if self.right(c, before) and not self.right(c, after)]
-            out[split] = {"fixed": fixed, "regressed": regressed, "net": len(fixed) - len(regressed)}
+            changed = [c for c in cs if self.right(c, before) != self.right(c, after)]
+            noisy = [c for c in changed if len(set(c["results"][before]["votes"])) > 1]
+            stable = [c for c in changed if c not in noisy]
+            fixed = [c["id"] for c in stable if self.right(c, after)]
+            regressed = [c["id"] for c in stable if not self.right(c, after)]
+            out[split] = {
+                "fixed": fixed,
+                "regressed": regressed,
+                "noisy": [c["id"] for c in noisy],
+                "net": len(fixed) - len(regressed),
+            }
         return out
 
     # rules -------------------------------------------------------------------
@@ -883,13 +894,17 @@ def render_report(s: dict, cases: list[dict]) -> str:
             L += ["Rejected proposals: " + "; ".join(r["proposal_problems"]), ""]
         if r.get("comparison"):
             cmp = r["comparison"]
-            L += ["| split | fixed | regressed | net |", "|---|---|---|---|"]
+            L += ["| split | fixed | regressed | net | changed, but split votes at baseline (not counted) |", "|---|---|---|---|---|"]
             for split in ("train", "holdout", "all"):
                 x = cmp[split]
-                L.append(f"| {split} | {len(x['fixed'])} | {len(x['regressed'])} | {x['net']:+d} |")
+                L.append(f"| {split} | {len(x['fixed'])} | {len(x['regressed'])} | {x['net']:+d} | {len(x.get('noisy', []))} |")
             L.append("")
             if cmp["all"]["regressed"]:
                 L.append("Regressed: " + ", ".join(f"{i} ({by_id[i]['label']})" for i in cmp["all"]["regressed"]))
+                L.append("")
+            if cmp["all"].get("noisy"):
+                L.append("Not counted (split votes at baseline): " + ", ".join(
+                    f"{i} ({'/'.join(by_id[i]['results'][base]['votes'])})" for i in cmp["all"]["noisy"]))
                 L.append("")
         if r.get("scope_recommendations", "").strip():
             L += ["### Scope recommendations", "", r["scope_recommendations"].strip(), ""]

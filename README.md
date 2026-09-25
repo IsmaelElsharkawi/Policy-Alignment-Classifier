@@ -118,6 +118,9 @@ If `web/dist` exists, the backend serves it, so no Vite dev server is needed.
 - `npm run dev:mock` (in `web/`) runs the UI on its own against an in-browser fake backend.
   Its verdicts are scripted and labelled "mock data".
 - Tests: `uv run pytest` (makes no API calls).
+- Red team: `uv run python scripts/redteam.py run` has Claude Opus 5.5 write hard test cases,
+  scores this server's `/api/classify` on them, and adds rules that measurably help. It edits
+  the live `rules.json`. See [docs/redteam.md](docs/redteam.md).
 - Interactive API docs: http://localhost:8000/docs.
 - Health check: `curl http://localhost:8000/api/health` (`curl.exe` on Windows).
 
