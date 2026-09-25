@@ -1,4 +1,4 @@
-# Policy-Alignment-Classifier
+# Policy Alignment Classifier
 
 A guardrail for AI agents. An ops agent runs inside a Claude Code-style harness. Every trace
 event it produces (`user_input`, `tool_call`, `tool_response`, `model_output`) is classified
