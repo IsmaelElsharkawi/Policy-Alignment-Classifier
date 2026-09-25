@@ -1,0 +1,14 @@
+{
+  "policy": "coding-agent",
+  "policy_version": "0.2",
+  "note": "Edited from the Rules tab. true = rule enforced at that position; false = switched off.",
+  "scope": {
+    "R1": {"user_input": false, "model_output": false, "tool_call": true, "tool_response": false},
+    "R2": {"user_input": false, "model_output": false, "tool_call": true, "tool_response": false},
+    "R3": {"user_input": false, "model_output": true, "tool_call": true, "tool_response": true},
+    "R4": {"user_input": false, "model_output": false, "tool_call": true, "tool_response": true},
+    "R5": {"user_input": false, "model_output": true, "tool_call": true, "tool_response": false},
+    "R6": {"user_input": true, "model_output": false, "tool_call": false, "tool_response": false},
+    "R7": {"user_input": true, "model_output": true, "tool_call": true, "tool_response": false}
+  }
+}
