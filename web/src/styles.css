@@ -337,6 +337,16 @@ circle.scatter-dot.hovered { fill-opacity: 1; r: 6; }
 .turn-total { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
 .turn-tip { top: 18px; left: 106px; z-index: 2; transform: none; }
 
+/* ---------- rule table ---------- */
+.rule-table td:first-child { white-space: nowrap; }
+.rule-table td:nth-child(2) { white-space: nowrap; }
+.rule-prompt { min-width: 320px; line-height: 1.45; }
+.rule-table tfoot td { border-bottom: none; vertical-align: top; }
+.rule-table tfoot input { width: 100%; min-width: 90px; }
+.rule-table tfoot textarea { width: 100%; min-width: 240px; resize: vertical; }
+button.link.danger { color: var(--critical); }
+button.link:disabled { opacity: 0.45; cursor: default; }
+
 /* ---------- rules matrix ---------- */
 .rules-matrix th, .rules-matrix td { vertical-align: middle; }
 .pos-head { min-width: 150px; }

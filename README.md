@@ -9,7 +9,8 @@ against a written policy **before it takes effect**, and is then passed, flagged
 ```
 policies/            the policies the guard enforces (see policies/README.md)
   ops-agent/
-    policy.md        the rules, which are the exact text the classifier reads
+    policy.md        deployment and trust model: the policy text that isn't a rule
+    rules.json       the rule table (number, name, prompt), editable from the Rules tab
     policy.yaml      enforcement: hook points, verdict -> action per mode, fail-closed, context size
 policyguard/         Python backend
   harness.py         agent loop with hooks at UserPromptSubmit / PreToolUse / PostToolUse / PreResponse

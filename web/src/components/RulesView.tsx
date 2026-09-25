@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, IS_MOCK } from "../api";
-import type { EventKind, RuleScopeMatrix, RulesConfig } from "../types";
+import type { EventKind, RuleEntry, RuleScopeMatrix, RulesConfig } from "../types";
+
+const EMPTY_ENTRY: RuleEntry = { number: "", name: "", prompt: "" };
 
 /**
  * Operator switchboard: for each policy rule and each trace position, is the rule enforced
  * ("Disallow": events that break it are violations) or switched off ("Allow": they pass)?
  * Saved to policies/<id>/rule_scope.json and applied to the next classified event.
+ *
+ * Above it, the rule table itself (policies/<id>/rules.json): each row's prompt is what the
+ * classifier reads. Adding or removing a row takes effect on the next classified event.
  */
 export function RulesView({ active }: { active: boolean }) {
   const [config, setConfig] = useState<RulesConfig | null>(null);
@@ -13,6 +18,9 @@ export function RulesView({ active }: { active: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [newEntry, setNewEntry] = useState<RuleEntry>(EMPTY_ENTRY);
+  const [tableBusy, setTableBusy] = useState(false);
+  const [tableStatus, setTableStatus] = useState<string | null>(null);
 
   useEffect(() => {
     if (!active) return;
@@ -52,6 +60,37 @@ export function RulesView({ active }: { active: boolean }) {
     }
   };
 
+  // After a table edit the rule groups may change: keep unsaved switches for groups that still
+  // exist, and take new groups from the server (enforced everywhere).
+  const applyTableChange = async (change: () => Promise<RulesConfig>, done: string) => {
+    setTableBusy(true);
+    setTableStatus(null);
+    try {
+      const c = await change();
+      setConfig(c);
+      setDraft((d) => Object.fromEntries(Object.entries(c.scope).map(([id, cells]) => [id, d[id] ?? structuredClone(cells)])) as RuleScopeMatrix);
+      setTableStatus(done);
+      return true;
+    } catch (e) {
+      setTableStatus(e instanceof Error ? e.message : String(e));
+      return false;
+    } finally {
+      setTableBusy(false);
+    }
+  };
+
+  const addRule = async () => {
+    if (await applyTableChange(() => api.addRule(newEntry), `Added ${newEntry.number.trim()}. Applies to the next classified event.`))
+      setNewEntry(EMPTY_ENTRY);
+  };
+
+  const removeRule = (number: string) => {
+    if (!window.confirm(`Remove ${number} from the policy? The classifier stops seeing it on the next event.`)) return;
+    void applyTableChange(() => api.removeRule(number), `Removed ${number}.`);
+  };
+
+  const canAdd = !tableBusy && newEntry.number.trim() !== "" && newEntry.name.trim() !== "" && newEntry.prompt.trim() !== "";
+
   const allOn = () =>
     setDraft(Object.fromEntries(config.rules.map((r) => [r.id, Object.fromEntries(config.positions.map((p) => [p.kind, true]))])) as RuleScopeMatrix);
 
@@ -64,6 +103,76 @@ export function RulesView({ active }: { active: boolean }) {
         {IS_MOCK && " (Mock mode: saved in memory only; scripted verdicts don't react to it.)"}
       </p>
 
+      <h3 className="section-title">Rule table</h3>
+      <p className="hint">
+        Each row is one rule the classifier is prompted with. Rows are grouped by their top-level number (R5, R5.1 and
+        R5.2 form group R5), and a group is titled by the part of its name before the first <code>_</code>. Verdicts
+        cite these numbers. Saved to <code>policies/{config.policy_id}/rules.json</code>.
+        {IS_MOCK && " (Mock mode: kept in memory only.)"}
+      </p>
+      <div className="card table-scroll">
+        <table className="grid rule-table">
+          <thead>
+            <tr>
+              <th>Number</th>
+              <th>Name</th>
+              <th>Prompt</th>
+              <th aria-label="Actions" />
+            </tr>
+          </thead>
+          <tbody>
+            {config.entries.map((e) => (
+              <tr key={e.number}>
+                <td className="rule-id">{e.number}</td>
+                <td className="mono">{e.name}</td>
+                <td className="rule-prompt">{e.prompt}</td>
+                <td>
+                  <button className="link danger" onClick={() => removeRule(e.number)} disabled={tableBusy}>
+                    Remove
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td>
+                <input
+                  aria-label="New rule number"
+                  placeholder="R8.1"
+                  value={newEntry.number}
+                  onChange={(ev) => setNewEntry({ ...newEntry, number: ev.target.value })}
+                />
+              </td>
+              <td>
+                <input
+                  aria-label="New rule name"
+                  placeholder="TOPIC_short_name"
+                  value={newEntry.name}
+                  onChange={(ev) => setNewEntry({ ...newEntry, name: ev.target.value })}
+                />
+              </td>
+              <td>
+                <textarea
+                  aria-label="New rule prompt"
+                  placeholder="What the classifier should allow or treat as a violation…"
+                  rows={2}
+                  value={newEntry.prompt}
+                  onChange={(ev) => setNewEntry({ ...newEntry, prompt: ev.target.value })}
+                />
+              </td>
+              <td>
+                <button className="primary" onClick={addRule} disabled={!canAdd}>
+                  {tableBusy ? "…" : "Add"}
+                </button>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      {tableStatus && <p className="hint">{tableStatus}</p>}
+
+      <h3 className="section-title">Where each rule applies</h3>
       <div className="card table-scroll">
         <table className="grid rules-matrix">
           <thead>

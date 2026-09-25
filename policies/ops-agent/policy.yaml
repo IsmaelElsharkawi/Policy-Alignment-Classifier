@@ -1,4 +1,4 @@
-# Enforcement config for the ops-agent policy. The rules themselves live in policy.md;
+# Enforcement config for the ops-agent policy. The rules themselves live in rules.json;
 # this file decides WHERE the guard runs and WHAT it does with each verdict.
 id: ops-agent
 version: "0.2"  # 0.2: added R7 (abuse and harassment)

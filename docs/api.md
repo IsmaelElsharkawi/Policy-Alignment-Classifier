@@ -161,6 +161,20 @@ What a switched-off cell does:
 
 Switching off a rule also switches off its sub-rules.
 
+### `POST /api/rules/entries` → `RulesConfig`
+Body `{ "number": "R8.1", "name": "VENDORS_contracts", "prompt": "..." }`. Adds a row to the
+rule table in `policies/<id>/rules.json`. The classifier prompt is rebuilt for the next
+classified event, with no restart. A new rule group starts enforced at every position. Returns
+422 if the number is malformed (`R<n>` or `R<n>.<m>`) or already taken, or if the name or prompt
+is empty.
+
+### `DELETE /api/rules/entries/{number}` → `RulesConfig`
+Removes a row. If that was the last row of its group, the group's scope row is dropped too.
+Returns 404 for an unknown number, and 422 if it would leave the policy with no rules.
+
+`RulesConfig.entries` lists the table's rows (`{ number, name, prompt }`) in number order.
+`RulesConfig.rules` gives the groups derived from them.
+
 ### `GET /api/policy` → `{ id, version, text }`
 The exact policy text the classifier is prompted with.
 
