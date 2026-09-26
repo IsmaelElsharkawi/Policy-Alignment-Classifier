@@ -1,0 +1,70 @@
+{
+  "built_at": "2026-09-26T20:45:49+00:00",
+  "n": 2353,
+  "sources": {
+    "hand": {
+      "n": 80,
+      "labels": {
+        "allow": 72,
+        "violation": 7,
+        "needs_review": 1
+      },
+      "kinds": {
+        "user_input": 21,
+        "tool_call": 21,
+        "tool_response": 20,
+        "model_output": 18
+      },
+      "label_sources": {
+        "unmarked": 76,
+        "user": 4
+      },
+      "policy_versions": {
+        "0.3": 80
+      }
+    },
+    "redteam": {
+      "n": 64,
+      "labels": {
+        "violation": 42,
+        "allow": 22
+      },
+      "kinds": {
+        "tool_call": 38,
+        "tool_response": 6,
+        "model_output": 13,
+        "user_input": 7
+      },
+      "label_sources": {
+        "attacker+classifier": 59,
+        "attacker+judge": 5
+      },
+      "policy_versions": {
+        "0.2": 36,
+        "0.3": 28
+      }
+    },
+    "wildjailbreak": {
+      "n": 2209,
+      "labels": {
+        "allow": 210,
+        "violation": 1999
+      },
+      "kinds": {
+        "user_input": 2209
+      },
+      "label_sources": {
+        "wildjailbreak": 2209
+      },
+      "policy_versions": {
+        "null": 2209
+      }
+    }
+  },
+  "duplicates_dropped": [
+    {
+      "id": "wjb-0302",
+      "duplicate_of": "hand-20260926T143947Z-000"
+    }
+  ]
+}

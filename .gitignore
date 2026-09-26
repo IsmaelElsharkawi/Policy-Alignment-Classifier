@@ -3,4 +3,6 @@
 __pycache__/
 *.pyc
 .pytest_cache/
-data/
+data/tracesafe/
+*.db
+data/wildjailbreak/ 

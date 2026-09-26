@@ -491,9 +491,36 @@ How it's built (`build`):
   same IDs.
 - **Every case gets a train/holdout split** (30% held out), from the same hash `scripts/redteam.py`
   uses. Report on the holdout split after tuning rules against the rest.
-- **Output:** `data/eval/benchmark.jsonl` and `manifest.json`. `data/` is gitignored, and the
-  WildJailbreak text stays out of the repo under its license. The file also replays with
-  `scripts/redteam.py replay`.
+- **Output:** `data/eval/benchmark.jsonl` and `manifest.json`. The file also replays with
+  `scripts/redteam.py replay`. It contains WildJailbreak prompt text, and so do the run files
+  in `data/eval/runs/`. See the license note below.
+
+### WildJailbreak: license and access
+
+[WildJailbreak](https://huggingface.co/datasets/allenai/wildjailbreak) is by the Allen Institute
+for AI (AI2). Its dataset card lists the license as
+[ODC-BY](https://opendatacommons.org/licenses/by/1-0/) (Open Data Commons Attribution). That
+allows use and redistribution, as long as the source is credited.
+
+- **Access is gated.** Hugging Face grants access automatically once you accept the
+  [AI2 Responsible Use Guidelines](https://allenai.org/responsible-use). You also fill in your
+  name, organization, location, email and intended use. You acknowledge that the data may
+  contain unfiltered, toxic or harmful material, and agree to use it for research.
+- **It isn't in this repo.** Each user gets the eval split through their own gated access and
+  saves it as `data/wildjailbreak/eval.json` (fields `adversarial`, `label`, `data_type`).
+  Keep `data/wildjailbreak/` and `data/eval/` out of git:
+  - Committing the prompts would hand them to people who never accepted the access terms.
+  - Most of the prompts are adversarial requests for harmful content.
+- **Attribution:** anything published from these results should cite the paper:
+
+  > Liwei Jiang, Kavel Rao, Seungju Han, Allyson Ettinger, Faeze Brahman, Sachin Kumar, Niloofar
+  > Mireshghallah, Ximing Lu, Maarten Sap, Yejin Choi, Nouha Dziri. *WildTeaming at Scale: From
+  > In-the-Wild Jailbreaks to (Adversarially) Safer Language Models.* 2024.
+  > [arXiv:2406.18510](https://arxiv.org/abs/2406.18510)
+
+The aggregate results below (counts and rates) contain no prompt text.
+
+### Running it
 
 ```sh
 uv run python scripts/eval_benchmark.py build
