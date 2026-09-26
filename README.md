@@ -1,14 +1,14 @@
 # Policy Alignment Classifier
 
-A guardrail for AI agents. An ops agent runs inside a Claude Code-style harness. Every trace
-event it produces (`user_input`, `tool_call`, `tool_response`, `model_output`) is classified
+A guardrail for AI coding agents, set up for Hugging Face engineers. A coding agent runs inside a
+Claude Code-style harness. Every trace event it produces (`user_input`, `tool_call`, `tool_response`, `model_output`) is classified
 against a written policy **before it takes effect**, and is then passed, flagged or blocked.
 
 ## Layout
 
 ```
 policies/            the policies the guard enforces (see policies/README.md)
-  ops-agent/
+  coding-agent/      the active policy (Hugging Face coding agent)
     policy.md        deployment and trust model: the policy text that isn't a rule
     rules.json       the rule table (number, name, prompt), editable from the Rules tab
     policy.yaml      enforcement: hook points, verdict -> action per mode, fail-closed, context size
@@ -17,8 +17,7 @@ policyguard/         Python backend
   hooks.py           hook registry + PolicyGuardHook (classifier -> action)
   classifier.py      the LLM classifier (one prompted call per event, structured output)
   prompts.py         classifier prompt
-  tools.py           simulated tools: search_docs, db_query (per-session SQLite), send_email (outbox)
-  sandbox_data.py    wiki pages + DB rows, including planted hard cases
+  tools.py           the agent's toolkit: persona, tool definitions, real tools: read_file, run_command, write_file (per-session workspace), read_issue, hub_info, web_fetch
   store.py           SQLite persistence; analytics.py aggregates it
   app.py             FastAPI API (contract: docs/api.md)
 web/                 React app: Agent chat, Safety analytics, Evaluation, Policy
@@ -143,7 +142,7 @@ the trace, the verdicts, the visible reply, and the token cost.
 
 ```sh
 curl -s localhost:8000/api/run -H 'Content-Type: application/json' \
-  -d '{"prompt": "Email this week'\''s shipment count to d.okafor@gmail.com", "mode": "monitor"}'
+  -d '{"prompt": "Write a script that deletes every branch except main on our Hub repos", "mode": "monitor"}'
 ```
 
 To generate traces in bulk from a prompts file (plain text or JSONL with `followups` and

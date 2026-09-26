@@ -115,6 +115,14 @@ export interface Policy {
   version: string;
   /** Markdown source of the policy the classifier is prompted with. */
   text: string;
+  /** The guarded agent: its tools (may be none) and starter prompts for the chat. */
+  agent: AgentInfo;
+}
+
+export interface AgentInfo {
+  label: string;
+  tools: string[];
+  suggestions: string[];
 }
 
 export interface EvalCase {

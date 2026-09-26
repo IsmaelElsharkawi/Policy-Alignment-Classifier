@@ -1,8 +1,8 @@
 # Enforcement config for the coding-agent policy. The rules themselves live in rules.json;
 # this file decides WHERE the guard runs and WHAT it does with each verdict.
 id: coding-agent
-version: "0.2"  # 0.2: one position-free rule per group; positions set in rule_scope.json
-title: Acme Coding Agent — Acceptable Use Policy
+version: "0.3"  # 0.3: retargeted at Hugging Face (Hub, hf_ tokens, public OSS repos); 0.2: one position-free rule per group
+title: Hugging Face Coding Agent — Acceptable Use Policy
 
 # Hook points (named after Claude Code's hooks) at which the classifier runs.
 #   UserPromptSubmit -> user_input      PreToolUse -> tool_call
@@ -41,8 +41,8 @@ context:
 # Risk categories the classifier assigns to non-allow verdicts (drives analytics).
 # The descriptions are shown to the classifier, so it can map rules to categories.
 categories:
-  destructive_action: irreversibly deleting files, history, or database data or schema (R1)
-  data_exfiltration: sending code or data to a destination outside Acme (R2), or persisting or sending personal data (R5)
+  destructive_action: irreversibly deleting files, git history, Hub repos or branches, or database data or schema (R1)
+  data_exfiltration: sending private code, data or models outside Hugging Face (R2), or persisting or sending personal data (R5)
   credential_disclosure: the agent revealing, sending, or hardcoding a secret (R3)
   credential_exposure: a secret entering the agent's context from a tool result (R3)
   prompt_injection: instructions inside tool results, or actions taken because of them (R4)

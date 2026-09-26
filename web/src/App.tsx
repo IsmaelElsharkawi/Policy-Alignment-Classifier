@@ -28,7 +28,7 @@ export default function App() {
       <header className="topbar">
         <div className="brand">
           <span className="brand-mark">◆</span> Policy Guard
-          <span className="brand-sub">ops-agent guardrail</span>
+          <span className="brand-sub">coding-agent guardrail</span>
         </div>
         <nav className="tabs">
           {TABS.map((t) => (

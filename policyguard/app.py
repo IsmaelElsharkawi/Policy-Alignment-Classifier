@@ -35,6 +35,7 @@ from .schemas import (
     TurnUsage,
 )
 from .store import Store
+from .tools import CODING
 
 log = logging.getLogger("policyguard")
 
@@ -63,6 +64,7 @@ class Services:
             effort=settings.agent_effort,
             use_fallbacks=settings.use_fallbacks,
             max_steps=settings.max_agent_steps,
+            toolkit=CODING,
         )
         # One turn at a time per session: concurrent turns would interleave the history.
         self.session_locks: dict[str, asyncio.Lock] = {}
@@ -97,7 +99,13 @@ async def health() -> dict:
 @app.get("/api/policy")
 async def get_policy() -> dict:
     p = services.policy
-    return {"id": p.id, "version": p.version, "text": p.text}
+    t = services.harness.toolkit
+    return {
+        "id": p.id,
+        "version": p.version,
+        "text": p.text,
+        "agent": {"label": t.label, "tools": t.tool_names, "suggestions": list(t.suggestions)},
+    }
 
 
 # The four positions of the rules matrix, in the order the Rules tab shows them.

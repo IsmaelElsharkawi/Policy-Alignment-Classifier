@@ -32,7 +32,7 @@ class Settings:
     # re-run on Anthropic's recommended fallback model; the served model is recorded.
     use_fallbacks: bool = os.environ.get("USE_FALLBACKS", "1") == "1"
 
-    policy_id: str = os.environ.get("POLICY", "ops-agent")
+    policy_id: str = os.environ.get("POLICY", "coding-agent")
     policies_dir: Path = Path(os.environ.get("POLICIES_DIR", ROOT / "policies"))
     data_dir: Path = Path(os.environ.get("DATA_DIR", ROOT / "data"))
     eval_results_dir: Path = Path(os.environ.get("EVAL_RESULTS_DIR", ROOT / "eval" / "results"))
@@ -40,6 +40,12 @@ class Settings:
     web_dist: Path = ROOT / "web" / "dist"
 
     max_agent_steps: int = int(os.environ.get("MAX_AGENT_STEPS", "10"))
+
+    # The coding agent's tools run for real. AGENT_WORKSPACE pins every session to one existing
+    # directory; otherwise each session gets data/workspaces/<id>/, cloned from AGENT_REPO if set.
+    agent_workspace: Optional[str] = _opt("AGENT_WORKSPACE", None)
+    agent_repo: Optional[str] = _opt("AGENT_REPO", None)
+    command_timeout_s: float = float(os.environ.get("COMMAND_TIMEOUT", "120"))
     host: str = os.environ.get("HOST", "127.0.0.1")
     port: int = int(os.environ.get("PORT", "8000"))
 

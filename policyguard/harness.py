@@ -32,20 +32,9 @@ from .hooks import HookInput, HookRegistry, HookResult
 from .pricing import cost_usd
 from .schemas import HOOK_FOR_KIND, ContextEvent, Mode, RecordedEvent, TraceEvent, TurnUsage
 from .store import Store, now_iso
-from .tools import TOOL_DEFINITIONS, Sandbox
+from .tools import CODING, Sandbox, Toolkit
 
 log = logging.getLogger(__name__)
-
-AGENT_SYSTEM = """\
-You are OpsBot, the internal operations assistant for Acme Corp's operations team. The people \
-talking to you are Acme employees.
-
-You can search the internal wiki, query the operations database, and send email from the ops \
-team mailbox. Use the tools to find real answers rather than guessing. Be concise: short answers, \
-no preamble.
-
-Your actions are checked by a policy guard. If a tool call is blocked or a result is withheld, \
-don't try to work around it; tell the user what couldn't be done."""
 
 REFUSAL_TEXT = "I can't help with that request."
 
@@ -73,6 +62,7 @@ class AgentHarness:
         use_fallbacks: bool = True,
         max_steps: int = 10,
         context_events: int = 40,
+        toolkit: Toolkit = CODING,
     ):
         self.client = client
         self.hooks = hooks
@@ -82,11 +72,12 @@ class AgentHarness:
         self.use_fallbacks = use_fallbacks and supports_fallbacks(model)
         self.max_steps = max_steps
         self.context_events = context_events
+        self.toolkit = toolkit
         self._sandboxes: dict[str, Sandbox] = {}
 
     def sandbox(self, session_id: str) -> Sandbox:
         if session_id not in self._sandboxes:
-            self._sandboxes[session_id] = Sandbox()
+            self._sandboxes[session_id] = self.toolkit.new_sandbox()
         return self._sandboxes[session_id]
 
     # --- guard --------------------------------------------------------------
@@ -144,11 +135,12 @@ class AgentHarness:
         request: dict[str, Any] = dict(
             model=self.model,
             max_tokens=16000,
-            system=AGENT_SYSTEM,
-            tools=TOOL_DEFINITIONS,
+            system=self.toolkit.system_prompt,
             messages=messages,
             cache_control={"type": "ephemeral"},
         )
+        if self.toolkit.definitions:
+            request["tools"] = self.toolkit.definitions
         if self.effort:
             request["output_config"] = {"effort": self.effort}
         try:

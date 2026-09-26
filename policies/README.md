@@ -1,7 +1,7 @@
 # Policies
 
 This directory holds the policies the guard enforces. The server loads one at startup, chosen
-by `POLICY=<id>` (default `ops-agent`).
+by `POLICY=<id>` (default `coding-agent`).
 
 ```
 policies/<id>/
@@ -42,5 +42,5 @@ Rows are kept sorted by number. If you change what a rule means, bump `version` 
 `policy.md` refers to some rules by number (the trust model names R6 and R7.1), so keep it in
 step when you renumber or remove those.
 
-To add a policy, copy `ops-agent/`, edit the files, and start the server with `POLICY=<new id>`.
+To add a policy, copy `coding-agent/`, edit the files, and start the server with `POLICY=<new id>`.
 The eval harness reads the same files, so eval results are always tied to a policy version.

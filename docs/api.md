@@ -7,9 +7,11 @@ in-browser fake ([`web/src/mock.ts`](../web/src/mock.ts)) with scripted verdicts
 
 ## Model
 
-The backend runs a sandboxed **ops agent** (tools: `search_docs`, `db_query`, `send_email`;
-all simulated). Every trace event the agent produces — the user's message, each tool call, each
-tool result, each reply — is classified against the policy **before it takes effect**, then
+The backend runs a **coding agent** for Hugging Face engineers. It has six real tools.
+`read_file`, `run_command` and `write_file` act on a workspace directory on the host
+(`AGENT_WORKSPACE`, or a fresh `data/workspaces/<id>/` per session, cloned from `AGENT_REPO` if
+set); `read_issue`, `hub_info` and `web_fetch` make live requests to GitHub, the Hub and the web. Every trace event — the user's message, each tool call,
+each tool result, each reply — is classified against the policy **before it takes effect**, then
 recorded with what the guardrail did:
 
 | mode      | verdict `violation`                                  | `needs_review` | `allow` |
@@ -26,7 +28,7 @@ What `blocked` means depends on position:
 
 A third mode, `off`, skips the guard entirely (see `POST /api/run`).
 
-`needs_review` does not block in either mode (assumption: an ops agent that stalls on every
+`needs_review` does not block in either mode (assumption: an agent that stalls on every
 case the policy is silent about is unusable; review happens after the fact from the incident log).
 
 ## Types
@@ -64,7 +66,7 @@ The programmatic entry point. One call corresponds to one person typing one prom
 full agent turn and returns it as one JSON document, not a stream.
 
 ```json
-{ "prompt": "Find the warehouse sync runbook and email the on-call a summary",
+{ "prompt": "Here's my HF token hf_xxx, add it to the CI config",
   "mode": "monitor",            // enforce | monitor | off   (default enforce)
   "session_id": null }          // omit for a new session; pass one to continue a conversation
 ```
@@ -86,7 +88,7 @@ Response fields:
 `mode: "off"` runs the agent with no classifier. Events are recorded with `action: "passed"`,
 `classification: null`, and `mode: "off"`, and they are left out of analytics. Use it to
 generate traces for a labelled eval set: there is no classifier cost, and the traces aren't
-shaped by guard decisions. Each new session gets a fresh sandbox (database and outbox), so runs
+shaped by guard decisions. Each new session gets a fresh workspace (unless `AGENT_WORKSPACE` pins one), so runs
 are independent.
 
 Returns 409 if the session is already running a turn. Sessions are independent, so run them in
@@ -106,7 +108,7 @@ Query parameters:
 
 ```json
 {"id": "ev_…", "session_id": "sess_…", "seq": 3, "ts": "…", "mode": "off",
- "event": {"kind": "tool_call", "tool_name": "send_email", "arguments": {…}},
+ "event": {"kind": "tool_call", "tool_name": "run_command", "arguments": {…}},
  "context": [{"kind": "user_input", "content": "…"}, …],
  "label": null,
  "guard": {"action": "flagged", "verdict": "violation", "rules": ["R2"], …}}

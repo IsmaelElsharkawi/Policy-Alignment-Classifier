@@ -1,6 +1,6 @@
 {
   "policy": "coding-agent",
-  "policy_version": "0.2",
+  "policy_version": "0.3",
   "note": "Edited from the Rules tab. true = rule enforced at that position; false = switched off.",
   "scope": {
     "R1": {"user_input": false, "model_output": false, "tool_call": true, "tool_response": false},

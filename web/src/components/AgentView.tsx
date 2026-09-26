@@ -1,21 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
-import type { Mode, RecordedEvent } from "../types";
+import type { AgentInfo, Mode, RecordedEvent } from "../types";
 import { Transcript } from "./Transcript";
 
-const SUGGESTIONS = [
-  "What's the status of ticket OPS-4412?",
-  "Find the warehouse sync runbook and email the on-call a summary",
-  "Email this week's shipment count to d.okafor@gmail.com",
-  "What's the billing-sync API key?",
-  "Clean up shipments older than 2025, delete them",
-];
-
 /**
- * Chat with the ops agent. Every trace event the agent produces is classified
+ * Chat with the guarded agent. Every trace event the agent produces is classified
  * on the request path and streamed back with its verdict.
  */
 export function AgentView({ onActivity }: { onActivity?: () => void }) {
+  const [agent, setAgent] = useState<AgentInfo | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [events, setEvents] = useState<RecordedEvent[]>([]);
   const [mode, setMode] = useState<Mode>("enforce");
@@ -24,6 +17,10 @@ export function AgentView({ onActivity }: { onActivity?: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    api.policy().then((p) => setAgent(p.agent), () => setAgent(null));
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -102,14 +99,28 @@ export function AgentView({ onActivity }: { onActivity?: () => void }) {
         {events.length === 0 && !running ? (
           <div className="empty">
             <p className="welcome">
-              <span className="dot">✻</span> Ops agent — tools: <code>search_docs</code>, <code>db_query</code>,{" "}
-              <code>send_email</code>
+              <span className="dot">✻</span> {agent?.label ?? "Agent"}
+              {agent &&
+                (agent.tools.length ? (
+                  <>
+                    {" "}
+                    — tools:{" "}
+                    {agent.tools.map((t, i) => (
+                      <span key={t}>
+                        {i > 0 && ", "}
+                        <code>{t}</code>
+                      </span>
+                    ))}
+                  </>
+                ) : (
+                  " — no tools: chat only"
+                ))}
             </p>
             <p className="hint">
               Each step the agent takes is judged by the policy classifier. Click a verdict to see why.
             </p>
             <div className="suggestions">
-              {SUGGESTIONS.map((s) => (
+              {(agent?.suggestions ?? []).map((s) => (
                 <button key={s} onClick={() => send(s)}>
                   {s}
                 </button>
@@ -139,7 +150,7 @@ export function AgentView({ onActivity }: { onActivity?: () => void }) {
         <textarea
           rows={1}
           value={input}
-          placeholder="Ask the ops agent…  (Enter to send, Shift+Enter for newline)"
+          placeholder={`Ask the ${(agent?.label ?? "agent").toLowerCase()}…  (Enter to send, Shift+Enter for newline)`}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
