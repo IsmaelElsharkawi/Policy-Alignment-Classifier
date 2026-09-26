@@ -125,36 +125,87 @@ export interface AgentInfo {
   suggestions: string[];
 }
 
+// --- evaluation benchmark (scripts/eval_benchmark.py) -----------------------
+
+export type EvalSource = "hand" | "redteam" | "wildjailbreak";
+
+/** Same outcome names as scripts/redteam.py. */
+export type EvalOutcome =
+  | "correct"
+  | "miss"
+  | "soft_miss"
+  | "false_block"
+  | "false_flag"
+  | "review_mismatch"
+  | "unscored";
+
+export interface EvalMetrics {
+  n: number;
+  errors: number;
+  accuracy: number | null;
+  outcomes: Partial<Record<EvalOutcome, number>>;
+  violations: number;
+  /** Share of violations allowed or only sent to review. */
+  attack_success_rate: number | null;
+  allowed: number;
+  /** Share of allowed cases blocked outright. */
+  false_block_rate: number | null;
+  /** `violation` is the positive class. */
+  precision: number | null;
+  recall: number | null;
+  f1: number | null;
+  /** Cases whose repeated votes disagreed (only with --repeats > 1). */
+  unstable: number;
+}
+
+export interface EvalGroup {
+  id: "policy" | EvalSource;
+  label: string;
+  note: string;
+  metrics: EvalMetrics;
+  /** confusion[label][verdict] = count; a failed call is `error`. */
+  confusion: Record<string, Record<string, number>>;
+}
+
 export interface EvalCase {
   id: string;
+  source: EvalSource;
+  split: "train" | "holdout";
   kind: EventKind;
-  gold: Verdict;
-  pred: Verdict | "error";
-  correct: boolean;
+  label: Verdict;
+  /** user, unmarked, attacker+classifier, attacker+judge, wildjailbreak */
+  label_source: string | null;
+  verdict: Verdict | null;
+  votes: Verdict[];
   rules: string[];
-  rationale: string;
-  /** Why the gold label was chosen, especially for contested cases. */
-  label_note?: string;
-  tags?: string[];
+  /** Missing for runs made before rationales were recorded. */
+  rationale: string | null;
+  error: string | null;
+  outcome: EvalOutcome;
+  technique: string;
+  /** The event, truncated. */
+  text: string;
+  n_context: number;
+  /** A user's failure note, or the red-team attacker's reason for the label. */
+  label_note: string | null;
 }
 
 export interface EvalReport {
   run_id: string;
-  model: string;
-  policy_version: string;
   created_at: string;
-  n: number;
-  metrics: {
-    accuracy: number;
-    violation_precision: number;
-    violation_recall: number;
-    needs_review_rate: number;
+  guard_model: string;
+  policy: { id: string; version: string };
+  params: { repeats: number; wjb_sample: number | null; seed: number; split: string; source: EvalSource[] };
+  calls: number;
+  cost_usd: number;
+  benchmark: {
+    built_at: string;
+    n: number;
+    sources: Record<EvalSource, { n: number; labels: Partial<Record<Verdict, number>> }>;
   };
-  /** confusion[gold][pred] = count */
-  confusion: Record<string, Record<string, number>>;
-  by_kind: Record<string, { n: number; accuracy: number }>;
-  latency?: { p50_ms: number; p95_ms: number };
-  cost_per_event_usd?: number;
+  groups: EvalGroup[];
+  /** Policy-labeled cases (hand + red team) only. */
+  by_kind: Record<string, EvalMetrics>;
   cases: EvalCase[];
 }
 

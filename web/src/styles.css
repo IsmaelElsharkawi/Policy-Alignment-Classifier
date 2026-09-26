@@ -318,6 +318,10 @@ td.off { font-weight: 700; box-shadow: inset 3px 0 0 var(--critical); }
 tr.clickable { cursor: pointer; }
 tr.clickable:hover td { background: var(--surface-2); }
 tr.wrong td:first-child { box-shadow: inset 3px 0 0 var(--critical); }
+tr.selected th, tr.selected td { background: var(--surface-2); }
+tr.selected th:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+td.case-text { min-width: 260px; max-width: 520px; }
+td.case-text .mono { white-space: pre-wrap; overflow-wrap: anywhere; display: block; max-height: 9.5em; overflow-y: auto; }
 .truncate { max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .table-scroll { overflow-x: auto; }
 

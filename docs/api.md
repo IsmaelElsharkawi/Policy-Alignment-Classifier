@@ -207,6 +207,10 @@ Returns 404 for an unknown number, and 422 if it would leave the policy with no 
 The exact policy text the classifier is prompted with.
 
 ### `GET /api/eval/latest` → `EvalReport`
-The most recent eval run written by the harness; 404 if none.
+The most recent run of `scripts/eval_benchmark.py` (`data/eval/runs/latest.json`, or
+`$EVAL_RESULTS_DIR/latest.json`); 404 if none. It has the run's metadata, and metrics and a
+confusion matrix per group (`policy` = hand + red team, then each source). It also has accuracy
+by event kind for the policy-labeled cases, and every case with its label, verdict, votes, rules
+and rationale. The shape is in `web/src/types.ts`.
 
 Errors: non-2xx with `{ "detail": "<message>" }`.

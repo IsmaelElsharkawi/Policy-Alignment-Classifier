@@ -35,7 +35,8 @@ class Settings:
     policy_id: str = os.environ.get("POLICY", "coding-agent")
     policies_dir: Path = Path(os.environ.get("POLICIES_DIR", ROOT / "policies"))
     data_dir: Path = Path(os.environ.get("DATA_DIR", ROOT / "data"))
-    eval_results_dir: Path = Path(os.environ.get("EVAL_RESULTS_DIR", ROOT / "eval" / "results"))
+    # Runs of scripts/eval_benchmark.py; the Evaluation tab shows latest.json.
+    eval_results_dir: Path = Path(os.environ.get("EVAL_RESULTS_DIR", ROOT / "data" / "eval" / "runs"))
     bench_results_dir: Path = Path(os.environ.get("BENCH_RESULTS_DIR", ROOT / "bench" / "results"))
     # Scenarios recorded from the Agent tab, with the guard failures a person marked.
     user_scenarios_dir: Path = Path(os.environ.get("USER_SCENARIOS_DIR", ROOT / "bench" / "user_scenarios"))

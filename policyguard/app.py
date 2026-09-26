@@ -337,9 +337,10 @@ async def latest_bench() -> FileResponse:
 
 @app.get("/api/eval/latest")
 async def latest_eval() -> FileResponse:
+    """Most recent benchmark run written by scripts/eval_benchmark.py."""
     path = settings.eval_results_dir / "latest.json"
     if not path.exists():
-        raise HTTPException(status_code=404, detail="No eval run yet. Run the eval harness first.")
+        raise HTTPException(status_code=404, detail="No eval run yet. Run scripts/eval_benchmark.py build, then run.")
     return FileResponse(path, media_type="application/json")
 
 

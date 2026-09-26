@@ -241,7 +241,7 @@ def test_classifier_sees_prior_events_with_guard_actions(tmp_path):
 
 
 def test_policy_loads_rules_and_actions():
-    assert set(POLICY.rule_ids) == {"R1", "R2", "R3", "R4", "R5", "R6", "R7"}
+    assert set(POLICY.rule_ids) == {f"R{i}" for i in range(1, 10)}
     assert POLICY.action_for("enforce", "violation") == "blocked"
     assert POLICY.action_for("monitor", "violation") == "flagged"
     assert POLICY.action_for("enforce", "needs_review") == "flagged"
@@ -329,8 +329,8 @@ def _result(verdict, rules):
 
 def test_policy_parses_rule_titles_and_subrules():
     by_id = {r.id: r for r in POLICY.rules}
-    assert list(by_id) == ["R1", "R2", "R3", "R4", "R5", "R6", "R7"]
-    assert by_id["R2"].title == "EGRESS"
+    assert list(by_id) == [f"R{i}" for i in range(1, 10)]
+    assert by_id["R2"].title == "Egress"
     assert by_id["R3"].subrules == ()
 
 
@@ -344,8 +344,8 @@ def _policy_copy(tmp_path):
 def test_rule_table_renders_into_prompt():
     text = POLICY.text
     assert text.startswith(POLICY.preamble) and "\n## Rules\n" in text
-    assert "### R5 — PERSONAL DATA" in text
-    assert "- **R5** Retrieving or revealing personal data of many people" in text
+    assert "### R5 — Personal Data" in text
+    assert "- **R5** Bulk-retrieving or revealing people's personal data" in text
 
 
 def test_rule_table_add_and_remove(tmp_path):
@@ -355,33 +355,36 @@ def test_rule_table_add_and_remove(tmp_path):
     scope = RuleScope(policy, tmp_path / "coding-agent" / "rule_scope.json")
     rev = policy.rulebook.revision
 
-    policy.rulebook.add({"number": "R8.1", "name": "VENDORS_no_contracts", "prompt": "  Do not   sign contracts. "})
+    # A new group after the last one in the checked-in table.
+    new = f"R{max(int(r.id[1:]) for r in policy.rules) + 1}"
+    unused = f"R{int(new[1:]) + 1}"
+    policy.rulebook.add({"number": f"{new}.1", "name": "VENDORS_no_contracts", "prompt": "  Do not   sign contracts. "})
     assert policy.rulebook.revision == rev + 1
-    assert [r.id for r in policy.rules][-1] == "R8" and policy.rules[-1].title == "VENDORS"
-    assert "- **R8.1** Do not sign contracts." in policy.text  # whitespace normalised
-    assert all(scope.as_dict()["R8"].values())  # new group starts enforced
+    assert [r.id for r in policy.rules][-1] == new and policy.rules[-1].title == "VENDORS"
+    assert f"- **{new}.1** Do not sign contracts." in policy.text  # whitespace normalised
+    assert all(scope.as_dict()[new].values())  # new group starts enforced
     saved = json.loads((tmp_path / "coding-agent" / "rules.json").read_text(encoding="utf-8"))
-    assert saved[-1] == {"number": "R8.1", "name": "VENDORS_no_contracts", "prompt": "Do not sign contracts."}
+    assert saved[-1] == {"number": f"{new}.1", "name": "VENDORS_no_contracts", "prompt": "Do not sign contracts."}
 
     # Rows are kept in number order, not insertion order.
     policy.rulebook.add({"number": "R2.1", "name": "EGRESS_no_gists", "prompt": "No gists."})
     assert [e.number for e in policy.rulebook.entries][1:3] == ["R2", "R2.1"]
 
     for bad in (
-        {"number": "R8.1", "name": "dup", "prompt": "x"},
+        {"number": f"{new}.1", "name": "dup", "prompt": "x"},
         {"number": "8", "name": "n", "prompt": "x"},
-        {"number": "R9", "name": " ", "prompt": "x"},
-        {"number": "R9", "name": "n", "prompt": ""},
+        {"number": unused, "name": " ", "prompt": "x"},
+        {"number": unused, "name": "n", "prompt": ""},
     ):
         with pytest.raises(ValueError):
             policy.rulebook.add(bad)
 
-    scope.replace({"R8": {"tool_call": False}})
-    policy.rulebook.remove("R8.1")
+    scope.replace({new: {"tool_call": False}})
+    policy.rulebook.remove(f"{new}.1")
     scope.prune()
-    assert "R8" not in policy.rule_ids and "R8" not in scope.as_dict()
+    assert new not in policy.rule_ids and new not in scope.as_dict()
     with pytest.raises(KeyError):
-        policy.rulebook.remove("R8.1")
+        policy.rulebook.remove(f"{new}.1")
 
 
 def test_scope_defaults_to_everything_enforced(tmp_path):
