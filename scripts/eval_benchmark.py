@@ -20,9 +20,11 @@ separately from the policy-labeled sources, never pooled with them.
     uv run python scripts/eval_benchmark.py run --source hand redteam --repeats 3
     uv run python scripts/eval_benchmark.py report data/eval/runs/<run id>.json
 
-`build` writes data/eval/benchmark.jsonl and manifest.json (data/ is gitignored, and the
-WildJailbreak text is under its own license). Every case has `id`, `source`, `event`, `context`,
-`label` and `split`, so the file also replays with `scripts/redteam.py replay`. `run` writes
+`build` writes data/eval/benchmark.jsonl and manifest.json. Every case has `id`, `source`,
+`event`, `context`, `label` and `split`. WildJailbreak access is gated, so its cases are written
+redacted: the prompt is replaced with a placeholder naming its row in eval.json, and `run` restores
+it from the local copy. Reports show only the placeholder. The hand and red-team cases are complete,
+so `scripts/redteam.py replay` works on them. `run` writes
 data/eval/runs/<run id>.json and latest.json, which the Evaluation tab shows: metrics and a
 confusion matrix per source, and every case's verdict and rationale. `report` rebuilds a saved run
 from its verdicts without classifier calls. Each classifier call costs about $0.004 on Haiku 4.5;
@@ -103,18 +105,53 @@ def load_redteam() -> list[dict]:
     return out
 
 
+def wjb_label(row: dict) -> str:
+    return "violation" if row["label"] == 1 else "allow"
+
+
+def wjb_placeholder(i: int) -> str:
+    return f"[WildJailbreak eval.json#{i}, see data/wildjailbreak/]"
+
+
 def load_wildjailbreak(path: Path) -> list[dict]:
     rows = json.loads(path.read_text(encoding="utf-8"))
     out = []
     for i, r in enumerate(rows):
         raw = {
             "event": {"kind": "user_input", "content": r["adversarial"]},
-            "label": "violation" if r["label"] == 1 else "allow",
+            "label": wjb_label(r),
             "label_source": "wildjailbreak",
             "technique": r["data_type"],
         }
         out.append(case(f"wjb-{i:04d}", "wildjailbreak", f"{path.name}#{i}", raw, data_type=r["data_type"]))
     return out
+
+
+def redact(c: dict) -> dict:
+    """WildJailbreak is gated: the benchmark file keeps only the row index, label and data type.
+    `run` puts the prompt back from the local copy (hydrate)."""
+    if c["source"] != "wildjailbreak":
+        return c
+    i = int(c["source_ref"].rsplit("#", 1)[1])
+    return {**c, "event": {**c["event"], "content": wjb_placeholder(i)}, "redacted": True}
+
+
+def hydrate(cases: list[dict], path: Path) -> None:
+    """Restore redacted WildJailbreak prompts from the local eval.json, in place."""
+    wjb = [c for c in cases if c.get("redacted")]
+    if not wjb:
+        return
+    if not path.exists():
+        raise SystemExit(
+            f"{path} not found. WildJailbreak is gated: get the eval split from "
+            "https://huggingface.co/datasets/allenai/wildjailbreak, or run with --source hand redteam."
+        )
+    rows = json.loads(path.read_text(encoding="utf-8"))
+    for c in wjb:
+        i = int(c["source_ref"].rsplit("#", 1)[1])
+        if i >= len(rows) or wjb_label(rows[i]) != c["label"] or rows[i]["data_type"] != c["data_type"]:
+            raise SystemExit(f"{path} doesn't match the benchmark at row {i}; rebuild with `build`")
+        c["event"]["content"] = rows[i]["adversarial"]
 
 
 def build(args: argparse.Namespace) -> None:
@@ -133,7 +170,7 @@ def build(args: argparse.Namespace) -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     with open(OUT / "benchmark.jsonl", "w", encoding="utf-8") as f:
         for c in cases:
-            f.write(json.dumps(c, ensure_ascii=False) + "\n")
+            f.write(json.dumps(redact(c), ensure_ascii=False) + "\n")
     manifest = {
         "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "n": len(cases),
@@ -306,6 +343,7 @@ def run(args: argparse.Namespace) -> None:
     if not path.exists():
         raise SystemExit(f"{path} not found; run `build` first")
     cases = pick(read_jsonl(path), args)
+    hydrate(cases, args.wildjailbreak)
     api = Api(args.base_url)
     health = api.call("GET", "/api/health")
     policy = api.call("GET", "/api/policy")
@@ -347,7 +385,7 @@ def run(args: argparse.Namespace) -> None:
         "created_at": now.isoformat(timespec="seconds"),
         "guard_model": health["guard_model"],
         "policy": {"id": policy["id"], "version": policy["version"]},
-        "params": {k: v for k, v in vars(args).items() if k != "func"},
+        "params": {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items() if k != "func"},
         "calls": calls,
         "cost_usd": round(cost[0], 4),
     }, results)
@@ -382,6 +420,8 @@ def main() -> None:
     r.add_argument("--seed", type=int, default=0)
     r.add_argument("--repeats", type=int, default=1, help="classify each case N times, majority vote")
     r.add_argument("--concurrency", type=int, default=8)
+    r.add_argument("--wildjailbreak", type=Path, default=ROOT / "data" / "wildjailbreak" / "eval.json",
+                   help="local copy the redacted WildJailbreak prompts are restored from")
     r.set_defaults(func=run)
     rep = sub.add_parser("report", help="rebuild a saved run's report (and latest.json) without API calls")
     rep.add_argument("run_file", type=Path)

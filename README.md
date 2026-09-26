@@ -25,8 +25,8 @@ web/                 React app: Agent chat, Safety analytics, Evaluation, Policy
 bench/
   results/           load tests (scripts/bench_classifier.py), shown in the Performance tab
   user_scenarios/    chats recorded from the Agent tab, with guard failures marked by hand (see its README)
-data/                gitignored: SQLite store, downloaded datasets (wildjailbreak/, tracesafe/)
-  eval/              the evaluation benchmark and its runs (scripts/eval_benchmark.py), shown in the Evaluation tab
+data/                local data; gitignored except eval/: SQLite store, agent workspaces, downloaded datasets (wildjailbreak/, tracesafe/)
+  eval/              the evaluation benchmark and its runs (scripts/eval_benchmark.py), WildJailbreak prompts redacted; shown in the Evaluation tab
 tests/               harness tests with a scripted model + classifier (no API calls)
 ```
 
@@ -491,9 +491,10 @@ How it's built (`build`):
   same IDs.
 - **Every case gets a train/holdout split** (30% held out), from the same hash `scripts/redteam.py`
   uses. Report on the holdout split after tuning rules against the rest.
-- **Output:** `data/eval/benchmark.jsonl` and `manifest.json`. The file also replays with
-  `scripts/redteam.py replay`. It contains WildJailbreak prompt text, and so do the run files
-  in `data/eval/runs/`. See the license note below.
+- **Output:** `data/eval/benchmark.jsonl` and `manifest.json`, both committed.
+  - Hand and red-team cases are stored in full.
+  - WildJailbreak cases are redacted, as described in the license note below.
+  - `scripts/redteam.py replay` works on the hand and red-team cases.
 
 ### WildJailbreak: license and access
 
@@ -506,11 +507,23 @@ allows use and redistribution, as long as the source is credited.
   [AI2 Responsible Use Guidelines](https://allenai.org/responsible-use). You also fill in your
   name, organization, location, email and intended use. You acknowledge that the data may
   contain unfiltered, toxic or harmful material, and agree to use it for research.
-- **It isn't in this repo.** Each user gets the eval split through their own gated access and
-  saves it as `data/wildjailbreak/eval.json` (fields `adversarial`, `label`, `data_type`).
-  Keep `data/wildjailbreak/` and `data/eval/` out of git:
-  - Committing the prompts would hand them to people who never accepted the access terms.
-  - Most of the prompts are adversarial requests for harmful content.
+- **The prompts aren't committed.** Committing them would hand them to people who never
+  accepted the access terms, and most of them are adversarial requests for harmful content.
+  - Each user gets the eval split through their own gated access and saves it as
+    `data/wildjailbreak/eval.json` (fields `adversarial`, `label`, `data_type`). That folder
+    is gitignored.
+  - In the committed `benchmark.jsonl`, each WildJailbreak case keeps its row index, label and
+    `data_type`. Its prompt is replaced by a placeholder such as
+    `[WildJailbreak eval.json#123, see data/wildjailbreak/]`.
+  - `run` restores the prompts from the local copy. It stops if the copy is missing or doesn't
+    match the benchmark's labels.
+  - Run reports store only the placeholder. The Evaluation tab still shows per-source metrics,
+    the confusion matrix and each case's verdict.
+- **Exceptions:**
+  - The "Donald Trump Tweet" user scenario starts with one WildJailbreak prompt, pasted into
+    the Agent tab. It is part of that recording, and of the hand case built from it.
+  - Commit `27c74cb` added the full prompt text for all 2,209 cases, and the next commit
+    removed it. The text is still in the git history unless the history is rewritten.
 - **Attribution:** anything published from these results should cite the paper:
 
   > Liwei Jiang, Kavel Rao, Seungju Han, Allyson Ettinger, Faeze Brahman, Sachin Kumar, Niloofar

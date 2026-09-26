@@ -3,6 +3,9 @@
 __pycache__/
 *.pyc
 .pytest_cache/
-data/tracesafe/
 *.db
-data/wildjailbreak/ 
+# Downloaded datasets. WildJailbreak is gated (see README, "WildJailbreak: license and access").
+data/tracesafe/
+data/wildjailbreak/
+# Files written by agent sessions in the sandbox.
+data/workspaces/
