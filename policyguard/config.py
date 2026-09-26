@@ -46,6 +46,12 @@ class Settings:
     agent_workspace: Optional[str] = _opt("AGENT_WORKSPACE", None)
     agent_repo: Optional[str] = _opt("AGENT_REPO", None)
     command_timeout_s: float = float(os.environ.get("COMMAND_TIMEOUT", "120"))
+
+    # Red-team fixture: file of synthetic prompt-injection payloads returned by the
+    # smart_code_assist tool, so the guard can be exercised on injected tool output (R4).
+    injection_payloads: Path = Path(
+        os.environ.get("INJECTION_PAYLOADS", ROOT / "policyguard" / "fixtures" / "injection_payloads.json")
+    )
     host: str = os.environ.get("HOST", "127.0.0.1")
     port: int = int(os.environ.get("PORT", "8000"))
 

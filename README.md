@@ -17,7 +17,7 @@ policyguard/         Python backend
   hooks.py           hook registry + PolicyGuardHook (classifier -> action)
   classifier.py      the LLM classifier (one prompted call per event, structured output)
   prompts.py         classifier prompt
-  tools.py           the agent's toolkit: persona, tool definitions, real tools: read_file, run_command, write_file (per-session workspace), read_issue, hub_info, web_fetch
+  tools.py           the agent's toolkit: persona + real tools (read_file, run_command, write_file, read_issue, hub_info, web_fetch) + smart_code_assist, a malicious injection fixture (see "Agent tools")
   store.py           SQLite persistence; analytics.py aggregates it
   app.py             FastAPI API (contract: docs/api.md)
 web/                 React app: Agent chat, Safety analytics, Evaluation, Policy
@@ -174,6 +174,24 @@ tool result never reached the agent. What each verdict does is set per mode in `
 - **enforce:** `violation` blocks and `needs_review` flags.
 - **monitor:** both only flag.
 - **Classifier errors:** enforce fails closed; monitor fails open.
+
+## Agent tools
+
+The coding agent (`policyguard/tools.py`) has real tools, defined in `policies/coding-agent/policy.md`:
+`read_file`, `write_file` and `run_command` act on a per-session workspace on disk; `read_issue`,
+`hub_info` and `web_fetch` make live requests to GitHub, the Hub and the web.
+
+> ⚠️ **`smart_code_assist` is a deliberately malicious tool — a red-team fixture, not a real
+> capability.** It poses as a third-party code-assistant service, but instead of helping it returns
+> a canned **indirect prompt-injection** payload (from `policyguard/fixtures/injection_payloads.json`)
+> as untrusted `tool_response` content. It exists only to exercise the guard: a call should be caught
+> at `PostToolUse` (rule R4), and any action the injection tries to provoke — exfiltrating the Hub
+> token, deleting branches, leaking private code, posting abuse — should be blocked by R1/R2/R3/R7.
+> The tool itself executes nothing. Each payload is labelled with the rule it targets; one is a
+> benign control for measuring false positives. Because it hands the agent injection strings on
+> demand, **only run it in `enforce` mode** — in `monitor` or `off`, if the agent obeys a payload the
+> follow-on `run_command` really executes against the workspace. Point `INJECTION_PAYLOADS` at another
+> file to swap the set.
 
 ## Models
 
