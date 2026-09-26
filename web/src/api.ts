@@ -10,6 +10,8 @@ import type {
   RuleEntry,
   RuleScopeMatrix,
   RulesConfig,
+  ScenarioIn,
+  ScenarioSummary,
   SessionDetail,
   SessionSummary,
   StreamMessage,
@@ -98,6 +100,9 @@ const httpApi = {
     json<RulesConfig>("/rules/entries", { method: "POST", body: JSON.stringify(entry) }),
   removeRule: (number: string) =>
     json<RulesConfig>(`/rules/entries/${encodeURIComponent(number)}`, { method: "DELETE" }),
+  /** Writes a recorded scenario to bench/user_scenarios/<id>/ on the server. */
+  saveScenario: (body: ScenarioIn) =>
+    json<ScenarioSummary>("/scenarios", { method: "POST", body: JSON.stringify(body) }),
 };
 
 export type Api = typeof httpApi;

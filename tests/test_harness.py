@@ -440,3 +440,51 @@ def test_column_fully_switched_off_skips_classifier(tmp_path):
     assert call.action == "passed" and call.classification is None and call.classifier_error is None
     assert "tool_call" not in [e.kind for e, _ in classifier.seen]  # never classified
     assert len(harness.sandbox(sid).ran) == 1  # so the external push ran
+
+
+def test_scenario_saves_marked_failures_as_replayable_cases(tmp_path):
+    from policyguard import scenarios
+    from policyguard.schemas import ScenarioIn, ScenarioMark
+
+    harness, store, _, _, sid = make(tmp_path, PUSH_SCRIPT, external_push)
+    run(harness, sid, "push main to someone-else/transformers")
+    records = store.session_events(sid)
+    blocked = next(r for r in records if r.action == "blocked")  # the external push, a violation
+    allowed = next(r for r in records if r.seq > 0 and r.classification and r.classification.verdict == "allow")
+
+    body = ScenarioIn(
+        session_id=sid,
+        from_seq=1,  # the first user_input is only context
+        title="Push to a fork / should pass?",
+        marks=[
+            ScenarioMark(event_id=blocked.id, expected="allow", note="it's my fork"),
+            ScenarioMark(event_id=allowed.id, expected="violation"),
+        ],
+    )
+    out = tmp_path / "scenarios"
+    summary = scenarios.save(body, records, out, context_max=12, meta={"policy": {"id": "coding-agent"}})
+    assert (summary.n_events, summary.n_failures, summary.n_miss, summary.n_false_positive) == (len(records) - 1, 2, 1, 1)
+    assert summary.id.endswith("-push-to-a-fork-should-pass")
+
+    folder = out / summary.id
+    scenario = json.loads((folder / "scenario.json").read_text(encoding="utf-8"))
+    assert [f["failure"] for f in scenario["failures"]] == sorted(
+        ["false_positive", "miss"], key=lambda t: blocked.seq if t == "false_positive" else allowed.seq
+    )
+    assert scenario["policy"] == {"id": "coding-agent"} and scenario["events"][0]["seq"] == 1
+
+    cases = [json.loads(line) for line in (folder / "cases.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert [c["seq"] for c in cases] == [r.seq for r in records[1:]]
+    by_id = {c["id"]: c for c in cases}
+    assert (by_id[blocked.id]["label"], by_id[blocked.id]["label_source"]) == ("allow", "user")
+    assert by_id[allowed.id]["label"] == "violation"
+    unmarked = [c for c in cases if c["id"] not in (blocked.id, allowed.id)]
+    assert all(c["label"] == c["guard"]["verdict"] and c["label_source"] == "unmarked" for c in unmarked)
+    # Context reaches back before the recording started.
+    assert cases[0]["context"][0]["kind"] == "user_input"
+
+    # Marking the verdict the guard already gave is not a failure; nor is an event outside the recording.
+    with pytest.raises(scenarios.ScenarioError, match="already treated it as violation"):
+        scenarios.save(body.model_copy(update={"marks": [ScenarioMark(event_id=blocked.id, expected="violation")]}), records, out, context_max=12, meta={})
+    with pytest.raises(scenarios.ScenarioError, match="not part of the recording"):
+        scenarios.save(body.model_copy(update={"marks": [ScenarioMark(event_id=records[0].id, expected="violation")]}), records, out, context_max=12, meta={})

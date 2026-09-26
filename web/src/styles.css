@@ -159,6 +159,7 @@ button.link { background: none; border: none; color: var(--accent); cursor: poin
   border-bottom: 1px solid var(--border);
 }
 .mode-hint { margin: 0; }
+.agent-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .session-stats { margin-left: auto; font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .agent-scroll { flex: 1; overflow-y: auto; padding: 16px; }
 .empty { padding: 32px 0; }
@@ -229,6 +230,66 @@ button.link { background: none; border: none; color: var(--accent); cursor: poin
   font-family: var(--mono); font-size: 0.8rem; white-space: pre-wrap; word-break: break-word;
 }
 .guard-meta { font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ---------- scenario recording ---------- */
+.rec-dot { color: var(--critical); }
+.rec-indicator {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 600; color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.rec-indicator .rec-dot { animation: rec-pulse 1.4s ease-in-out infinite; }
+@keyframes rec-pulse { 50% { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) { .rec-indicator .rec-dot { animation: none; } }
+.record-start {
+  font-family: system-ui, sans-serif; font-size: 0.75rem; color: var(--critical); margin: 10px 0 4px;
+  border-top: 1px dashed var(--critical); padding-top: 4px;
+}
+.mark-btn {
+  background: none; border: 1px solid transparent; border-radius: 4px; color: var(--muted); cursor: pointer;
+  font-family: system-ui, sans-serif; font-size: 0.75rem; padding: 0 6px; flex-shrink: 0; white-space: nowrap;
+}
+.step:hover .mark-btn, .mark-btn:focus-visible { color: var(--text-2); border-color: var(--border); }
+.mark-btn:hover { color: var(--text); background: var(--surface-2); }
+.mark-btn.active { color: var(--critical); border-color: var(--critical); }
+.step.is-marked { outline: 1px dashed var(--critical); outline-offset: 2px; }
+.mark-note {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 0 2px 18px;
+  font-family: system-ui, sans-serif; font-size: 0.8rem; color: var(--text-2);
+}
+.mark-flag { color: var(--critical); }
+.mark-text { flex-basis: 100%; color: var(--text); white-space: pre-wrap; }
+.mark-form {
+  display: flex; flex-direction: column; gap: 8px; margin: 6px 0 4px 18px; padding: 10px 12px;
+  border: 1px solid var(--critical); border-radius: 6px; background: var(--surface);
+  font-family: system-ui, sans-serif; font-size: 0.85rem;
+}
+.mark-form-head { display: flex; flex-direction: column; gap: 2px; }
+.mark-form-head .hint { margin: 0; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.mark-form-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.segmented button:disabled { opacity: 0.4; cursor: not-allowed; text-decoration: line-through; }
+.failure-type {
+  font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700;
+  padding: 1px 6px; border-radius: 4px; border: 1px solid var(--critical); color: var(--text);
+}
+.failure-false_positive { border-color: var(--warning); }
+.mark-form textarea, .scenario-panel textarea { resize: vertical; font-family: inherit; font-size: 0.85rem; }
+.mark-form-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+button.ghost.danger:hover:not(:disabled) { color: var(--critical); border-color: var(--critical); }
+.scenario-panel {
+  display: flex; flex-direction: column; gap: 8px; margin: 0 16px 10px; padding: 12px 14px;
+  border-color: var(--critical); max-height: 45vh; overflow-y: auto;
+}
+.scenario-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.scenario-head .hint { margin: 0; }
+.scenario-marks {
+  margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem;
+}
+.scenario-marks li { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.scenario-saved {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-top: 12px;
+  border-color: var(--good); background: var(--good-tint); font-size: 0.85rem;
+}
+.scenario-saved code { word-break: break-all; }
 
 /* ---------- panels / analytics ---------- */
 .panel { display: flex; flex-direction: column; gap: 16px; }

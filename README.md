@@ -19,8 +19,12 @@ policyguard/         Python backend
   prompts.py         classifier prompt
   tools.py           the agent's toolkit: persona + real tools (read_file, run_command, write_file, read_issue, hub_info, web_fetch) + smart_code_assist, a malicious injection fixture (see "Agent tools")
   store.py           SQLite persistence; analytics.py aggregates it
+  scenarios.py       saves scenarios recorded in the Agent tab to bench/user_scenarios/
   app.py             FastAPI API (contract: docs/api.md)
 web/                 React app: Agent chat, Safety analytics, Evaluation, Policy
+bench/
+  results/           load tests (scripts/bench_classifier.py), shown in the Performance tab
+  user_scenarios/    chats recorded from the Agent tab, with guard failures marked by hand (see its README)
 tests/               harness tests with a scripted model + classifier (no API calls)
 ```
 
@@ -120,6 +124,11 @@ If `web/dist` exists, the backend serves it, so no Vite dev server is needed.
 - Red team: `uv run python scripts/redteam.py run` has Claude Opus 5.5 write hard test cases,
   scores this server's `/api/classify` on them, and adds rules that measurably help. It edits
   the live `rules.json`. See [docs/redteam.md](docs/redteam.md).
+- User scenarios: in the Agent tab, **● Record scenario** records the chat from that point on.
+  While it records, **⚑ Mark failure** on any step (user input, tool call, tool result or
+  system output) notes that the guard got it wrong and what it should have said. **Stop &
+  save** writes it to `bench/user_scenarios/<id>/`. Its `cases.jsonl` replays with
+  `scripts/redteam.py replay`. See [bench/user_scenarios/README.md](bench/user_scenarios/README.md).
 - Interactive API docs: http://localhost:8000/docs.
 - Health check: `curl http://localhost:8000/api/health` (`curl.exe` on Windows).
 

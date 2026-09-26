@@ -15,6 +15,8 @@ import type {
   RuleScopeMatrix,
   RulesConfig,
   RecordedEvent,
+  ScenarioIn,
+  ScenarioSummary,
   SessionDetail,
   SessionSummary,
   StreamMessage,
@@ -22,6 +24,7 @@ import type {
   Verdict,
 } from "./types";
 import { EVENT_KINDS, VERDICTS } from "./types";
+import { POSITION, failureType } from "./scenario";
 
 interface Step {
   event: TraceEvent;
@@ -556,6 +559,38 @@ export const mockApi = {
     const groups = new Set(mockRules().map((r) => r.id));
     mockScope = Object.fromEntries(Object.entries(mockScope).filter(([id]) => groups.has(id)));
     return rulesConfig();
+  },
+
+  // Nothing is written in mock mode; the summary is what the real backend would return.
+  async saveScenario(body: ScenarioIn): Promise<ScenarioSummary> {
+    const s = sessions.get(body.session_id);
+    if (!s) throw new Error("Unknown session");
+    const recorded = s.events.filter((e) => e.seq >= body.from_seq);
+    if (!recorded.length) throw new Error("nothing was recorded: the session has no events from that point");
+    const failures = body.marks.map((m) => {
+      const rec = recorded.find((e) => e.id === m.event_id);
+      if (!rec) throw new Error(`event ${m.event_id} is not part of the recording`);
+      const type = failureType(rec, m.expected);
+      if (!type) throw new Error(`event ${rec.seq} (${rec.event.kind}): the guard already treated it as ${m.expected}`);
+      return { type, position: POSITION[rec.event.kind] };
+    });
+    const now = new Date();
+    const title = body.title.trim() || "Untitled scenario";
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "scenario";
+    const id = `${now.toISOString().replace(/[-:]/g, "").slice(0, 15)}Z-${slug}`;
+    const byPosition: Record<string, number> = {};
+    for (const f of failures) byPosition[f.position] = (byPosition[f.position] ?? 0) + 1;
+    return {
+      id,
+      title,
+      recorded_at: now.toISOString(),
+      path: `bench/user_scenarios/${id} (mock: not written)`,
+      n_events: recorded.length,
+      n_failures: failures.length,
+      n_miss: failures.filter((f) => f.type === "miss").length,
+      n_false_positive: failures.filter((f) => f.type === "false_positive").length,
+      failures_by_position: byPosition,
+    };
   },
 
   async latestEval(): Promise<EvalReport> {

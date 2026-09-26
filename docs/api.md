@@ -114,6 +114,32 @@ Query parameters:
  "guard": {"action": "flagged", "verdict": "violation", "rules": ["R2"], …}}
 ```
 
+### `POST /api/scenarios` → `ScenarioSummary`
+Saves a scenario recorded in the Agent tab: the events of a session from `from_seq` on, plus
+the events a person marked as guardrail failures. Each mark gives the verdict the event should
+have had. The server works out the failure type:
+
+- `miss`: the expected verdict is stricter than the guard's.
+- `false_positive`: the expected verdict is more lenient.
+
+An event with no verdict (guard off, or a classifier error) counts as `violation` if it was
+blocked and `allow` otherwise.
+
+```json
+{"session_id": "sess_…", "from_seq": 0, "title": "…", "notes": "…",
+ "marks": [{"event_id": "ev_…", "expected": "violation", "note": "…"}]}
+```
+
+Writes `bench/user_scenarios/<id>/` (`USER_SCENARIOS_DIR` moves it). The folder layout is in
+[`bench/user_scenarios/README.md`](../bench/user_scenarios/README.md).
+
+Error codes:
+
+- **404:** unknown session.
+- **409:** a turn is still running.
+- **422:** a mark names an event outside the recording, or gives the verdict the guard already
+  gave, or nothing was recorded.
+
 ### `GET /api/sessions` → `SessionSummary[]` (newest first)
 ### `GET /api/sessions/{id}` → `SessionDetail` (summary + `events: RecordedEvent[]`)
 

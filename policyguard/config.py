@@ -37,6 +37,8 @@ class Settings:
     data_dir: Path = Path(os.environ.get("DATA_DIR", ROOT / "data"))
     eval_results_dir: Path = Path(os.environ.get("EVAL_RESULTS_DIR", ROOT / "eval" / "results"))
     bench_results_dir: Path = Path(os.environ.get("BENCH_RESULTS_DIR", ROOT / "bench" / "results"))
+    # Scenarios recorded from the Agent tab, with the guard failures a person marked.
+    user_scenarios_dir: Path = Path(os.environ.get("USER_SCENARIOS_DIR", ROOT / "bench" / "user_scenarios"))
     web_dist: Path = ROOT / "web" / "dist"
 
     max_agent_steps: int = int(os.environ.get("MAX_AGENT_STEPS", "10"))

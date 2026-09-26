@@ -14,7 +14,7 @@ from fastapi import Body, FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import analytics, export, perf
+from . import analytics, export, perf, scenarios
 from .classifier import ClassifierError, LLMClassifier
 from .config import settings
 from .harness import AgentHarness, HarnessError
@@ -29,6 +29,8 @@ from .schemas import (
     RuleEntryIn,
     RunRequest,
     RunResponse,
+    ScenarioIn,
+    ScenarioSummary,
     SendMessageRequest,
     SessionDetail,
     SessionSummary,
@@ -283,6 +285,34 @@ async def export_events(
     cases = export.to_cases(records, services.policy.context_max_events, blind)
     lines = (json.dumps(c, ensure_ascii=False) + "\n" for c in cases)
     return StreamingResponse(lines, media_type="application/x-ndjson")
+
+
+@app.post("/api/scenarios", response_model=ScenarioSummary)
+async def save_scenario(body: ScenarioIn) -> ScenarioSummary:
+    """Save a scenario recorded in the Agent tab to bench/user_scenarios/<id>/: the session's
+    events from `from_seq` on, and the events a person marked as guardrail failures."""
+    if services.store.session_summary(body.session_id) is None:
+        raise HTTPException(status_code=404, detail="Unknown session")
+    lock = services.session_locks.get(body.session_id)
+    if lock is not None and lock.locked():
+        raise HTTPException(status_code=409, detail="Wait for the running turn to finish before saving")
+    meta = {
+        "policy": {"id": services.policy.id, "version": services.policy.version},
+        "guard_model": settings.guard_model,
+        "agent_model": settings.agent_model,
+    }
+    try:
+        summary = scenarios.save(
+            body,
+            services.store.session_events(body.session_id),
+            settings.user_scenarios_dir,
+            context_max=services.policy.context_max_events,
+            meta=meta,
+        )
+    except scenarios.ScenarioError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    log.info("scenario saved: %s (%d failures marked)", summary.path, summary.n_failures)
+    return summary
 
 
 @app.get("/api/analytics")

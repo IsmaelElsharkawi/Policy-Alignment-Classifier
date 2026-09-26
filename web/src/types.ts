@@ -261,3 +261,36 @@ export interface RulesConfig {
   entries: RuleEntry[];
   scope: RuleScopeMatrix;
 }
+
+// --- user scenarios -------------------------------------------------------------
+
+/** An event the person recording marked as a guardrail failure: the verdict it should have had. */
+export interface ScenarioMark {
+  event_id: string;
+  expected: Verdict;
+  note: string;
+}
+
+/** POST /scenarios: the session's events from `from_seq` on, plus the marks. */
+export interface ScenarioIn {
+  session_id: string;
+  from_seq: number;
+  title: string;
+  notes: string;
+  marks: ScenarioMark[];
+}
+
+export interface ScenarioSummary {
+  id: string;
+  title: string;
+  recorded_at: string;
+  /** Folder the scenario was written to, e.g. bench/user_scenarios/<id>. */
+  path: string;
+  n_events: number;
+  n_failures: number;
+  /** The guard should have been stricter. */
+  n_miss: number;
+  /** The guard should have been more lenient. */
+  n_false_positive: number;
+  failures_by_position: Record<string, number>;
+}

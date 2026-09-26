@@ -162,3 +162,39 @@ class RunResponse(BaseModel):
     latency_ms: float
     usage: TurnUsage
     total_cost_usd: float
+
+
+# --- user scenarios ---------------------------------------------------------
+
+
+class ScenarioMark(BaseModel):
+    """One event where the person recording saw the guardrail fail: the verdict it should
+    have had. Whether that makes it a miss or a false positive follows from the guard's own."""
+
+    event_id: str
+    expected: Verdict
+    note: str = Field(default="", max_length=4000)
+
+
+class ScenarioIn(BaseModel):
+    """A recorded stretch of a chat session: every event from `from_seq` on, plus the marks."""
+
+    session_id: str
+    from_seq: int = Field(default=0, ge=0)
+    title: str = Field(default="", max_length=200)
+    notes: str = Field(default="", max_length=8000)
+    marks: list[ScenarioMark] = Field(default_factory=list)
+
+
+class ScenarioSummary(BaseModel):
+    id: str
+    title: str
+    recorded_at: str
+    # Folder the scenario was written to (relative to the repo when it is inside it).
+    path: str
+    n_events: int
+    n_failures: int
+    n_miss: int  # the guard should have been stricter
+    n_false_positive: int  # the guard should have been more lenient
+    # "user input" / "tool call" / "tool result" / "system output" -> marked failures
+    failures_by_position: dict[str, int] = Field(default_factory=dict)
